@@ -33,15 +33,17 @@ export default function MainView({
   } = useEventStore();
 
   useEffect(() => {
-    const mappedEvents: CalendarEventType[] = eventsData.map((event) => ({
-      id: event.id,
-      date: dayjs(event.date),
-      title: event.title,
-      description: event.description,
-      category: isEventCategory(event.category)
-        ? event.category
-        : DEFAULT_EVENT_CATEGORY,
-    }));
+   const mappedEvents: CalendarEventType[] = eventsData.map((event) => ({
+  id: event.id,
+  date: dayjs(event.date),
+  endDate: dayjs(event.endDate),
+  title: event.title,
+  description: event.description,
+  category: isEventCategory(event.category)
+    ? event.category
+    : DEFAULT_EVENT_CATEGORY,
+  location: event.location,
+}));
 
     setEvents(mappedEvents);
   }, [eventsData, setEvents]);

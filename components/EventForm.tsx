@@ -21,6 +21,12 @@ export default function EventForm() {
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(dayjs().format("YYYY-MM-DD"));
   const [time, setTime] = useState(dayjs().format("HH:mm"));
+const [endTime, setEndTime] = useState(
+  dayjs().add(1, "hour").format("HH:mm")
+);
+const [conflicts, setConflicts] = useState<
+  { id: number; title: string; date: string; endDate: string }[]
+>([]);
   const [description, setDescription] = useState("");
   const [category, setCategory] =
     useState<EventCategory>(DEFAULT_EVENT_CATEGORY);
@@ -31,11 +37,13 @@ export default function EventForm() {
   useEffect(() => {
     setError(null);
     setSuccess(false);
+setConflicts([]);
 
     if (selectedEvent) {
       setTitle(selectedEvent.title);
       setDate(dayjs(selectedEvent.date).format("YYYY-MM-DD"));
       setTime(dayjs(selectedEvent.date).format("HH:mm"));
+setEndTime(dayjs(selectedEvent.endDate).format("HH:mm"));
       setDescription(selectedEvent.description || "");
       setCategory(
         isEventCategory(selectedEvent.category)
@@ -46,6 +54,7 @@ export default function EventForm() {
       setTitle("");
       setDate(dayjs().format("YYYY-MM-DD"));
       setTime(dayjs().format("HH:mm"));
+setEndTime(dayjs().add(1, "hour").format("HH:mm"));
       setDescription("");
       setCategory(DEFAULT_EVENT_CATEGORY);
     }
@@ -53,48 +62,70 @@ export default function EventForm() {
 
   if (!isEventFormOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
+  
+const handleSubmit = async (
+  e?: React.FormEvent,
+  confirmConflicts = false
+) => {
+  e?.preventDefault();
+  setLoading(true);
+  setError(null);
 
-    try {
-      let res;
+  try {
+    if (endTime <= time) {
+      setError("End time must be later than start time");
+      return;
+    }
 
-      if (selectedEvent) {
-        res = await updateEvent(Number(selectedEvent.id), {
+    let res;
+
+    if (selectedEvent) {
+      res = await updateEvent(
+        Number(selectedEvent.id),
+        {
           title,
           description,
           date: new Date(`${date}T${time}:00`),
+          endDate: new Date(`${date}T${endTime}:00`),
           category,
-        });
-      } else {
-        const formData = new FormData();
-        formData.append("title", title);
-        formData.append("description", description);
-        formData.append("date", date);
-        formData.append("time", time);
-        formData.append("category", category);
+        },
+        confirmConflicts
+      );
+    } else {
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("date", date);
+      formData.append("time", time);
+      formData.append("endTime", endTime);
+      formData.append("category", category);
 
-        res = await createEvent(formData);
-      }
-
-      if (res.error) {
-        setError(res.error);
-      } else {
-        setSuccess(true);
-        setTimeout(() => {
-          setSuccess(false);
-          closeEventForm();
-        }, 800);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("Something went wrong");
-    } finally {
-      setLoading(false);
+      res = await createEvent(formData, confirmConflicts);
     }
-  };
+
+    if (res.conflicts && res.conflicts.length > 0) {
+      setConflicts(res.conflicts);
+      return;
+    }
+
+    if (res.error) {
+      setError(res.error);
+    } else if (res.success) {
+      setConflicts([]);
+      setSuccess(true);
+      setTimeout(() => {
+        setSuccess(false);
+        closeEventForm();
+      }, 800);
+    }
+  } catch (err) {
+    console.error(err);
+    setError("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -127,6 +158,21 @@ export default function EventForm() {
             onChange={(e) => setTime(e.target.value)}
             required
           />
+<div className="space-y-1">
+  <label
+    htmlFor="event-end-time"
+    className="text-sm font-medium text-gray-700"
+  >
+    End Time
+  </label>
+  <Input
+    id="event-end-time"
+    type="time"
+    value={endTime}
+    onChange={(e) => setEndTime(e.target.value)}
+    required
+  />
+</div>
 
           <div className="space-y-1">
             <label
@@ -161,6 +207,49 @@ export default function EventForm() {
             rows={3}
           />
         </div>
+
+{conflicts.length > 0 && (
+  <div className="mt-4 rounded-lg border border-amber-400 bg-amber-50 p-3">
+    <p className="font-semibold text-amber-900">
+      This event overlaps with existing event(s):
+    </p>
+
+    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-900">
+      {conflicts.map((conflict) => (
+        <li key={conflict.id}>
+          <span className="font-medium">{conflict.title}</span>
+          {" — "}
+          {dayjs(conflict.date).format("MMM D, h:mm A")}
+          {"–"}
+          {dayjs(conflict.endDate).format("h:mm A")}
+        </li>
+      ))}
+    </ul>
+
+    <p className="mt-2 text-sm text-amber-900">
+      Would you like to save this event anyway?
+    </p>
+
+    <div className="mt-3 flex justify-end gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setConflicts([])}
+        disabled={loading}
+      >
+        Cancel
+      </Button>
+
+      <Button
+        type="button"
+        disabled={loading}
+        onClick={() => handleSubmit(undefined, true)}
+      >
+        {loading ? "Saving..." : "Save anyway"}
+      </Button>
+    </div>
+  </div>
+)}
 
         {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         {success && <p className="text-green-600 text-sm mt-2">✓ Saved!</p>}

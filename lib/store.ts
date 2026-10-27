@@ -22,15 +22,14 @@ interface DateStoreType {
 }
 
 export type CalendarEventType = {
-  id: number; // ✅ Use number (since DB id is numeric)
+  id: number;
   title: string;
   date: dayjs.Dayjs;
+  endDate: dayjs.Dayjs;
   description: string;
-category: EventCategory;
+  category: EventCategory;
   location?: string;
-  
 };
-
 type EventStore = {
   events: CalendarEventType[];
   eventSearchQuery: string;
