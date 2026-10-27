@@ -10,9 +10,10 @@ const getEventsData = async () => {
 
     // Convert the Dayjs object to a simple ISO string
     return data.map((event) => ({
-      ...event,
-      date: dayjs(event.date).toISOString(), // Convert Dayjs to string
-    }));
+  ...event,
+  date: dayjs(event.date).toISOString(),
+  endDate: dayjs(event.endDate).toISOString(),
+}));
   } catch (error) {
     console.error("Error fetching data from the database:", error);
     return [];
