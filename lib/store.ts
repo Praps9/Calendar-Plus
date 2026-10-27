@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { getMonth } from "./getTime";
 import { deleteEvent as deleteEventServer } from "../app/actions/event-actions"; // ✅ connect to backend delete
-
+import type { EventCategory } from "./event-categories";
 // ------------------------------
 // 🧭 Interfaces
 // ------------------------------
@@ -26,11 +26,17 @@ export type CalendarEventType = {
   title: string;
   date: dayjs.Dayjs;
   description: string;
+category: EventCategory;
   location?: string;
+  
 };
 
 type EventStore = {
   events: CalendarEventType[];
+  eventSearchQuery: string;
+  categoryFilter: EventCategory | "All";
+  setEventSearchQuery: (query: string) => void;
+  setCategoryFilter: (category: EventCategory | "All") => void;
   selectedEvent: CalendarEventType | null;
   isEventSummaryOpen: boolean;
   isEventFormOpen: boolean;
@@ -95,11 +101,15 @@ export const useDateStore = create<DateStoreType>()(
 
 export const useEventStore = create<EventStore>((set) => ({
   events: [],
+  eventSearchQuery: "",
+  categoryFilter: "All",
   selectedEvent: null,
   isEventSummaryOpen: false,
   isEventFormOpen: false,
 
   setEvents: (events) => set({ events }),
+  setEventSearchQuery: (query) => set({ eventSearchQuery: query }),
+  setCategoryFilter: (category) => set({ categoryFilter: category }),
 
   openEventSummary: (event) =>
     set({ selectedEvent: event, isEventSummaryOpen: true }),
