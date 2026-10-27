@@ -55,6 +55,11 @@ export function EventRenderer({ date, view, events }: EventRendererProps) {
 
         return (
           <div
+draggable
+onDragStart={(e) => {
+  e.dataTransfer.setData("application/calendar-event-id", String(event.id));
+  e.dataTransfer.effectAllowed = "move";
+}}
             key={event.id}
             onClick={(e) => {
               e.stopPropagation();
