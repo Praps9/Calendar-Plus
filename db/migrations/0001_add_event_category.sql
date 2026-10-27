@@ -1,0 +1,1 @@
+ALTER TABLE "events" ADD COLUMN "category" text DEFAULT 'Other' NOT NULL;
