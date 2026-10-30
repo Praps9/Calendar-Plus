@@ -5,7 +5,9 @@ import {
   timestamp,
   serial,
   integer,
+  boolean,
 } from "drizzle-orm/pg-core";
+
 import { DEFAULT_EVENT_CATEGORY } from "@/lib/event-categories";
 
 export const usersTable = pgTable("users", {
@@ -14,13 +16,14 @@ export const usersTable = pgTable("users", {
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  isLegacy: boolean("is_legacy").notNull().default(false),
 });
 
 export const eventsTable = pgTable("events", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
+    .references(() => usersTable.id, { onDelete: "restrict" }),
   date: timestamp("date").notNull(),
   endDate: timestamp("end_date").notNull(),
   title: text("title").notNull(),

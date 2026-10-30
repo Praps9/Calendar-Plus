@@ -1,8 +1,6 @@
 
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-// Next.js processes this global stylesheet even when TypeScript cannot resolve its side-effect import.
-// @ts-ignore
 import "./globals.css";
 import EventForm from "@/components/EventForm";
 import SessionProvider from "@/components/providers/SessionProvider";

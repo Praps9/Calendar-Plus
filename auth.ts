@@ -1,4 +1,3 @@
-
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
@@ -42,7 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .where(eq(usersTable.email, parsed.data.email))
           .limit(1);
 
-        if (!user) return null;
+        if (!user || user.isLegacy) return null;
 
         const validPassword = await compare(
           parsed.data.password,
