@@ -13,7 +13,7 @@ import { DEFAULT_EVENT_CATEGORY } from "@/lib/event-categories";
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").notNull().unique("users_email_key"),
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   isLegacy: boolean("is_legacy").notNull().default(false),
