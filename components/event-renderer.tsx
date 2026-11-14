@@ -3,7 +3,7 @@
 
 import { type CalendarEventType, useEventStore } from "@/lib/store";
 import dayjs from "dayjs";
-import React, { useState } from "react";
+import { useState } from "react";
 import EventSummaryPopover from "./event-summary-popover";
 import {
   DEFAULT_EVENT_CATEGORY,
@@ -51,16 +51,27 @@ export function EventRenderer({ date, view, events }: EventRendererProps) {
         const category = isEventCategory(event.category)
           ? event.category
           : DEFAULT_EVENT_CATEGORY;
+
         const categoryStyle = EVENT_CATEGORY_STYLES[category];
 
         return (
           <div
-draggable
-onDragStart={(e) => {
-  e.dataTransfer.setData("application/calendar-event-id", String(event.id));
-  e.dataTransfer.effectAllowed = "move";
-}}
-            key={event.id}
+            key={event.occurrenceKey ?? `event-${event.id}`}
+            draggable={!event.isOccurrence}
+            onDragStart={(e) => {
+              // Recurring occurrences must not move their entire parent series.
+              if (event.isOccurrence) {
+                e.preventDefault();
+                return;
+              }
+
+              e.dataTransfer.setData(
+                "application/calendar-event-id",
+                String(event.id),
+              );
+
+              e.dataTransfer.effectAllowed = "move";
+            }}
             onClick={(e) => {
               e.stopPropagation();
               setSelectedEvent(event);

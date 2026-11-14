@@ -29,6 +29,13 @@
       "when": 1793298219569,
       "tag": "0003_fresh_multiuser_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793868955705,
+      "tag": "0004_recurring_events",
+      "breakpoints": true
     }
   ]
 }

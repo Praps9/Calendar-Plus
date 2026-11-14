@@ -32,6 +32,13 @@ type UpdatedEventData = {
   category?: string;
 };
 
+type RecurrenceFrequency =
+  | "none"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "yearly";
+
 /**
  * Get the authenticated user's database ID.
  * Never accept a user ID from client-submitted form data.
@@ -51,6 +58,21 @@ async function getAuthenticatedUserId(): Promise<number | null> {
   }
 
   return userId;
+}
+
+/**
+ * Validate an IANA timezone.
+ */
+function isValidTimeZone(timeZone: string): boolean {
+  try {
+    new Intl.DateTimeFormat("en-US", {
+      timeZone,
+    }).format();
+
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -108,6 +130,19 @@ export async function createEvent(
   const endTime = String(formData.get("endTime") ?? "");
   const rawCategory = formData.get("category");
 
+  // Recurrence information
+  const rawFrequency = String(
+    formData.get("recurrenceFrequency") ?? "none"
+  );
+
+  const rawInterval = String(
+    formData.get("recurrenceInterval") ?? "1"
+  );
+
+  const recurrenceTimezone = String(
+    formData.get("recurrenceTimezone") ?? ""
+  ).trim();
+
   const category =
     rawCategory === null || rawCategory === ""
       ? DEFAULT_EVENT_CATEGORY
@@ -119,6 +154,60 @@ export async function createEvent(
 
   if (typeof category !== "string" || !isEventCategory(category)) {
     return { error: "Invalid event category." };
+  }
+
+  // Validate recurrence frequency
+  const allowedFrequencies: RecurrenceFrequency[] = [
+    "none",
+    "daily",
+    "weekly",
+    "monthly",
+    "yearly",
+  ];
+
+  if (
+    !allowedFrequencies.includes(
+      rawFrequency as RecurrenceFrequency
+    )
+  ) {
+    return { error: "Invalid recurrence frequency." };
+  }
+
+  // Validate recurrence interval
+  const recurrenceInterval = Number(rawInterval);
+
+  if (
+    !Number.isSafeInteger(recurrenceInterval) ||
+    recurrenceInterval < 1 ||
+    recurrenceInterval > 99
+  ) {
+    return {
+      error: "Recurrence interval must be between 1 and 99.",
+    };
+  }
+
+  // Prepare RRULE and timezone
+  let recurrenceRule: string | null = null;
+  let recurrenceTimezoneValue: string | null = null;
+
+  if (rawFrequency !== "none") {
+    const frequencyMap: Record<
+      Exclude<RecurrenceFrequency, "none">,
+      string
+    > = {
+      daily: "DAILY",
+      weekly: "WEEKLY",
+      monthly: "MONTHLY",
+      yearly: "YEARLY",
+    };
+
+    if (!recurrenceTimezone || !isValidTimeZone(recurrenceTimezone)) {
+      return { error: "Invalid or missing event timezone." };
+    }
+
+    recurrenceRule = `FREQ=${frequencyMap[rawFrequency as Exclude<RecurrenceFrequency, "none">]};INTERVAL=${recurrenceInterval}`;
+
+    recurrenceTimezoneValue = recurrenceTimezone;
   }
 
   const startDateTime = new Date(`${date}T${time}:00`);
@@ -153,6 +242,10 @@ export async function createEvent(
       date: startDateTime,
       endDate: endDateTime,
       category,
+
+      // Recurrence fields
+      recurrenceRule,
+      recurrenceTimezone: recurrenceTimezoneValue,
     });
 
     revalidatePath("/");
