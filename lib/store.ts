@@ -23,13 +23,22 @@ interface DateStoreType {
 
 export type CalendarEventType = {
   id: number;
+
   title: string;
   date: dayjs.Dayjs;
   endDate: dayjs.Dayjs;
   description: string;
   category: EventCategory;
   location?: string;
+
+  recurrenceRule?: string | null;
+  recurrenceTimezone?: string | null;
+
+  occurrenceKey?: string;
+  originalStart?: dayjs.Dayjs;
+  isOccurrence?: boolean;
 };
+
 type EventStore = {
   events: CalendarEventType[];
   eventSearchQuery: string;
